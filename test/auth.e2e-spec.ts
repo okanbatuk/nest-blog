@@ -1,46 +1,44 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
 import Redis from 'ioredis';
+import helmet from 'helmet';
+import * as cookieParser from 'cookie-parser';
+import { AppModule } from './../src/app.module';
 import { LoginUserDto, RegisterUserDto } from 'src/auth/dtos';
-import { User } from 'src/models/users/entities/User';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
   let res: request.Response;
   let redis: Redis;
-  let dbUser: User;
-  let loginUser: LoginUserDto;
-  let existUser: RegisterUserDto;
   let newUser: RegisterUserDto;
+  let loginUser: LoginUserDto = {
+    email: 'john@test.com',
+    password: 'johndoe1',
+  };
+  let existUser: RegisterUserDto = {
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john@test.com',
+    password: 'johndoe1',
+  };
 
   beforeAll(async () => {
-    existUser = {
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@test.com',
-      password: 'johndoe1',
-    };
-
-    await request(app.getHttpServer())
-      .post('/api/register')
-      .send(existUser)
-      .set('Content-Type', 'application/json');
-  });
-
-  beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     redis = new Redis();
     app = moduleFixture.createNestApplication();
+    app.use(helmet());
+    app.use(cookieParser());
+    app.setGlobalPrefix('api');
     await app.init();
   });
 
   afterAll(async () => {
     await redis.flushall();
+    await app.close();
   });
 
   it('/ (GET)', () => {
@@ -55,6 +53,14 @@ describe('AppController (e2e)', () => {
   });
 
   describe('User Registration', () => {
+    beforeAll(async () => {
+      await request(app.getHttpServer())
+        .post('/api/register')
+        .send(existUser)
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json');
+    });
+
     it('POST /api/register', async () => {
       res = await request(app.getHttpServer())
         .post('/api/register')
@@ -83,10 +89,7 @@ describe('AppController (e2e)', () => {
   });
 
   describe('Login User', () => {
-    loginUser = {
-      email: 'john@test.com',
-      password: 'johndoe1',
-    };
+    let payload: Types.Payload;
 
     it('POST /api/login should return user and token', async () => {
       res = await request(app.getHttpServer())
@@ -95,21 +98,29 @@ describe('AppController (e2e)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json');
 
+      payload = res.body;
+      const refreshToken = res.headers['set-cookie'][0]
+        .split(' ')[0]
+        .split('=')[1]
+        .split(';')[0];
+
+      expect(await redis.smembers(payload.uuid)).toEqual(
+        expect.arrayContaining([refreshToken]),
+      );
       expect(res.statusCode).toBe(HttpStatus.OK);
       expect(res.body).toEqual({
         accessToken: expect.any(String),
-        uuid: dbUser.uuid,
-        firstName: dbUser.firstName,
-        lastName: dbUser.lastName,
+        uuid: expect.any(String),
+        firstName: 'John',
+        lastName: 'Doe',
       });
     });
   });
 
-  describe('Refresh the Access Token', () => {
-    loginUser = { email: 'john@test.com', password: 'johndoe1' };
-
+  describe('Refresh the Access Token and Logout Session', () => {
     let payload: Types.Payload;
     let refreshToken: string;
+
     beforeEach(async () => {
       res = await request(app.getHttpServer())
         .post('/api/login')
@@ -118,14 +129,16 @@ describe('AppController (e2e)', () => {
         .set('Accept', 'application/json');
 
       payload = res.body;
-      const cookies = res.headers['set-cookie'];
-      console.log(cookies);
+      refreshToken = res.headers['set-cookie'][0]
+        .split(' ')[0]
+        .split('=')[1]
+        .split(';')[0];
     });
 
     it('GET /api/refresh/:uuid -- should return new Access Token', async () => {
-      res = await request(app.getHttpServer)
+      res = await request(app.getHttpServer())
         .get(`/api/refresh/${payload.uuid}`)
-        .set('Cookie', `${refreshToken}`)
+        .set('Cookie', [`jwt=${refreshToken};`])
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(HttpStatus.OK);
@@ -140,37 +153,24 @@ describe('AppController (e2e)', () => {
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(HttpStatus.UNAUTHORIZED);
-      expect(res.body).toEqual(
-        expect.objectContaining({
-          statusCode: HttpStatus.UNAUTHORIZED,
-        }),
-      );
-    });
-  });
-
-  describe('Logout user', () => {
-    let payload: Types.Payload;
-    let refreshToken: string;
-    beforeEach(async () => {
-      res = await request(app.getHttpServer())
-        .post('/api/login')
-        .send()
-        .set('Content-Type', 'application/json')
-        .set('Accept', 'application/json');
-
-      payload = res.body;
-      const cookies = res.headers['set-cookie'];
-      console.log(cookies);
+      expect(res.body).toEqual({
+        message: 'Cookie was not provided',
+        error: 'Unauthorized',
+        statusCode: 401,
+      });
     });
 
     it('GET /api/logout', async () => {
       res = await request(app.getHttpServer())
         .get('/api/logout')
-        .set('Cookie', `${refreshToken}`)
+        .set('Cookie', [`jwt=${refreshToken};`])
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(HttpStatus.OK);
-      expect(res.body).toEqual({ message: 'Logged out successfully' });
+      expect(res.body).toEqual({
+        message: 'Logged out successfully',
+        status: HttpStatus.OK,
+      });
     });
 
     it('GET /api/logout', async () => {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import User from 'src/database/factories/user.entity';
+import User from '../database/factories/user.entity';
 import { Repository } from 'typeorm';
 import { RegisterUserDto } from './dtos';
 
@@ -10,6 +10,7 @@ export class AuthService {
     @InjectRepository(User) private userRepository: Repository<User>,
   ) {}
 
+  // Get user by email
   getByEmail = async (email: string): Promise<User> => {
     const user = await this.userRepository.findOne({
       where: { email, isActive: true },
@@ -17,6 +18,7 @@ export class AuthService {
     return user;
   };
 
+  // Save the new user to PG
   register = async (payload: RegisterUserDto) => {
     try {
       const newUser = this.userRepository.create(payload);

@@ -39,6 +39,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async loginUser(
     @Body() userPayload: LoginUserDto,
     @Req() req: Request,
@@ -56,7 +57,7 @@ export class AuthController {
 
     const { jwt } = req.cookies;
 
-    // Delete the user token/tokens
+    // Delete the user token
     jwt &&
       (res.clearCookie('jwt', {
         httpOnly: true,
@@ -84,6 +85,7 @@ export class AuthController {
       expiresIn: '1d',
     });
 
+    // Set refresh token to cookie
     res.cookie('jwt', refreshToken, {
       httpOnly: true,
       // secure: true,
@@ -139,25 +141,30 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
+    // Get the jwt on cookies
     const { jwt } = req.cookies;
-    if (!jwt) return new UnauthorizedException('Cookie was not provided');
+    if (!jwt) throw new UnauthorizedException('Cookie was not provided');
 
+    // Clear the cookie
     res.clearCookie('jwt', {
       httpOnly: true,
       // secure: true,
       // sameSite: 'none',
     });
 
+    // Decode the refresh token
     const decoded: Types.Payload = await this.jwtService.verifyAsync(jwt, {
       secret: this.configService.get('REFRESH_TOKEN_SECRET'),
     });
-    if (!decoded) return new HttpException('No Content', HttpStatus.NO_CONTENT);
+    if (!decoded) throw new HttpException('No Content', HttpStatus.NO_CONTENT);
 
+    // Check the hacked user
     if (uuid !== decoded.sub) {
       await this.#redis.del(decoded.sub);
-      return new ForbiddenException();
+      throw new ForbiddenException();
     }
 
+    // Delete the old token from redis cache memory
     await this.#redis.srem(decoded.sub, jwt);
 
     const payload = {
@@ -177,6 +184,7 @@ export class AuthController {
       expiresIn: '1d',
     });
 
+    // Set the cookie
     res.cookie('jwt', newRefreshToken, {
       httpOnly: true,
       // secure: true,
@@ -194,9 +202,10 @@ export class AuthController {
   }
 
   @Get('logout')
+  @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const { jwt } = req.cookies;
-    if (!jwt) return new UnauthorizedException('Cookie was not provided');
+    if (!jwt) throw new UnauthorizedException('Cookie was not provided');
 
     res.clearCookie('jwt', {
       httpOnly: true,
@@ -204,11 +213,13 @@ export class AuthController {
       // sameSite:"none"
     });
 
+    // Decode the token
     const decoded: Types.Payload = await this.jwtService.verifyAsync(jwt, {
       secret: this.configService.get('REFRESH_TOKEN_SECRET'),
     });
-    if (!decoded) return new HttpException('No Content', HttpStatus.NO_CONTENT);
+    if (!decoded) throw new HttpException('No Content', HttpStatus.NO_CONTENT);
 
+    // Get the count of user tokens
     let count = await this.#redis.scard(decoded.sub);
 
     count > 1

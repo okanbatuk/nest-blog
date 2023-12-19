@@ -26,6 +26,7 @@ import { AuthService } from './auth.service';
 import { LoginUserDto, RegisterUserDto } from './dtos';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { Public } from '../common/decorators/public.decorator';
 
 @Controller('/')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -34,10 +35,11 @@ export class AuthController {
 
   constructor(
     @Inject('AUTH_SERVICE') private authService: AuthService,
-    @Inject('JWT_SERVICE') private jwtService: JwtService,
+    private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
 
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async loginUser(
@@ -108,6 +110,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async registerUser(@Body() userPayload: RegisterUserDto) {
@@ -134,6 +137,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Get('refresh/:uuid')
   async regenerateToken(
     @Param('uuid', ParseUUIDPipe)
@@ -201,6 +205,7 @@ export class AuthController {
     return { accessToken: newAccessToken };
   }
 
+  @Public()
   @Get('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {

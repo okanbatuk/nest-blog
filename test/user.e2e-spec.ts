@@ -5,8 +5,7 @@ import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Redis } from 'ioredis';
 import { AppModule } from './../src/app.module';
-import { LoginUserDto } from 'src/auth/dtos';
-import User from 'src/database/factories/user.entity';
+import { LoginUserDto } from '../src/auth/dtos';
 
 describe('Users Routes (e2e)', () => {
   let app: INestApplication;
@@ -19,6 +18,7 @@ describe('Users Routes (e2e)', () => {
       imports: [AppModule],
     }).compile();
 
+    redis = new Redis();
     app = moduleFixture.createNestApplication();
     app.use(helmet());
     app.use(cookieParser());
@@ -54,42 +54,55 @@ describe('Users Routes (e2e)', () => {
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(HttpStatus.OK);
-      expect(res.body).toEqual(expect.arrayContaining([User]));
+      expect(res.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            email: expect.any(String),
+            firstName: expect.any(String),
+            lastName: expect.any(String),
+            role: expect.any(String),
+          }),
+        ]),
+      );
     });
 
     it('GET /api/users/:uuid -- should return a user', async () => {
       res = await request(app.getHttpServer())
-        .get('/api/users/8630bb72-19c7-442b-be9b-75c66e6c751e')
+        .get('/api/users/7a494d20-09db-491d-8dea-89b910a2549b')
         .set('Authorization', `Bearer ${payload.accessToken}`)
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(HttpStatus.OK);
       expect(res.body).toEqual(
         expect.objectContaining({
-          // TODO: Change user to Serialized User
-          User,
+          email: 'jane@test.com',
+          firstName: 'Jane',
+          lastName: 'Doe',
+          role: 'USER',
         }),
       );
     });
 
     it("GET /api/users/profile -- should return the logged in user's profile information", async () => {
       res = await request(app.getHttpServer())
-        .delete('/api/users/profile')
+        .get('/api/users/profile')
         .set('Authorization', `Bearer ${payload.accessToken}`)
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(HttpStatus.OK);
       expect(res.body).toEqual(
         expect.objectContaining({
-          // TODO: Change user to Serialized User
-          User,
+          email: 'john@test.com',
+          firstName: 'John',
+          lastName: 'Doe',
+          role: 'ADMIN',
         }),
       );
     });
 
     it('DELETE /api/users/:uuid -- should return ok and delete the user', async () => {
       res = await request(app.getHttpServer())
-        .delete('/api/users/71604b8a-4f36-4eaf-bdcf-2ae618a4fdfc')
+        .delete('/api/users/c074cc00-b61d-4d75-9578-9a22c33be046')
         .set('Authorization', `Bearer ${payload.accessToken}`)
         .set('Accept', 'application/json');
 

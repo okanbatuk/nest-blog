@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import User from '../../database/factories/user.entity';
-import { CoreModule } from '../../common/modules/core.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), CoreModule],
+  imports: [TypeOrmModule.forFeature([User]), JwtModule],
   controllers: [UsersController],
   providers: [
     {

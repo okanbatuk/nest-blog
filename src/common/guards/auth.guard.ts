@@ -29,7 +29,7 @@ export class AuthGuard implements CanActivate {
     // Get request object
     const request = context.switchToHttp().getRequest();
 
-    // Extract and check tokens 
+    // Extract and check tokens
     const token = this.#extractToken(request);
     const { jwt } = request.cookies;
     if (!jwt || !token) throw new UnauthorizedException();
@@ -40,7 +40,7 @@ export class AuthGuard implements CanActivate {
       });
       request['user'] = payload;
     } catch (err) {
-      throw new UnauthorizedException(err.message);
+      throw new UnauthorizedException(err);
     }
     return true;
   }

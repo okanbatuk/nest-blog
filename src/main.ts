@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import { ConfigService } from '@nestjs/config';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 import { HttpStatus, ValidationPipe } from '@nestjs/common';
 
 (async () => {
@@ -10,7 +10,7 @@ import { HttpStatus, ValidationPipe } from '@nestjs/common';
     logger: ['error', 'warn'],
   });
   const configService = app.get(ConfigService);
-  const PORT = configService.get<number>('PORT');
+  const PORT = <number>configService.get<number>('PORT');
   app.use(helmet());
   app.use(cookieParser());
   app.setGlobalPrefix('api');

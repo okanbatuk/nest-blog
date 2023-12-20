@@ -72,16 +72,15 @@ export class UsersController {
     @Req() req,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (uuid !== req.user.sub) {
-      res.clearCookie('jwt', {
-        httpOnly: true,
-        // secure:true,
-        // sameSite:"none"
-      });
-      this.#redis.del(req.user.sub);
-      throw new ForbiddenException();
-    }
-    const user = await this.usersService.getById(req.user.sub);
-    await this.usersService.delete(user);
+    res.clearCookie('jwt', {
+      httpOnly: true,
+      // secure:true,
+      // sameSite:"none"
+    });
+    await this.#redis.del(req.user.sub);
+
+    if (req.user.sub !== uuid) throw new ForbiddenException();
+
+    await this.usersService.delete(req.user.sub);
   }
 }

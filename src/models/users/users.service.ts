@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import User from '../../database/factories/user.entity';
+import { Service } from '../../common/types/service';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements Service<User> {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
   ) {}
@@ -16,7 +17,7 @@ export class UsersService {
   };
 
   // Return user by id
-  getById = async (uuid: string): Promise<User> => {
+  getById = async (uuid: string): Promise<User | null> => {
     const user = await this.userRepository.findOne({
       where: { uuid, isActive: true },
     });
@@ -24,10 +25,13 @@ export class UsersService {
   };
 
   // Set isActive field to false
-  delete = async (user: User): Promise<void> => {
-    user.deletedAtDate = user.updatedAtDate = new Date();
-    user.deletedAtTime = user.updatedAtTime = new Date().toLocaleTimeString();
-    user.isActive = false;
-    await user.save();
+  delete = async (uuid: string): Promise<void> => {
+    await this.userRepository.update(
+      { uuid },
+      {
+        deletedAt: new Date(),
+        isActive: false,
+      },
+    );
   };
 }

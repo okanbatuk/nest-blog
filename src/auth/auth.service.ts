@@ -11,7 +11,7 @@ export class AuthService {
   ) {}
 
   // Get user by email
-  getByEmail = async (email: string): Promise<User> => {
+  getByEmail = async (email: string): Promise<User | null> => {
     const user = await this.userRepository.findOne({
       where: { email, isActive: true },
     });
@@ -22,7 +22,7 @@ export class AuthService {
   register = async (payload: RegisterUserDto) => {
     try {
       const newUser = this.userRepository.create(payload);
-      return this.userRepository.save(newUser);
+      await this.userRepository.save(newUser);
     } catch (err) {
       throw err;
     }

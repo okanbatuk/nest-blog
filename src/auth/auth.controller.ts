@@ -20,7 +20,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { hash, compare } from 'bcrypt';
 import { Redis } from 'ioredis';
 import { AuthService } from './auth.service';
 import { LoginUserDto, RegisterUserDto } from './dtos';
@@ -54,7 +54,7 @@ export class AuthController {
     if (!user) throw new NotFoundException('User Not Found');
 
     // Compare the password
-    const check = await bcrypt.compare(userPayload.password, user.password);
+    const check = await compare(userPayload.password, user.password);
     if (!check) throw new ForbiddenException('Invalid password');
 
     const { jwt } = req.cookies;
@@ -124,7 +124,7 @@ export class AuthController {
       throw new ConflictException('Email has already been used!!');
 
     // Hash the password
-    const hashedPassword = await bcrypt.hash(userPayload.password, 10);
+    const hashedPassword = await hash(userPayload.password, 10);
 
     try {
       // Save the user with hashed password
@@ -133,7 +133,7 @@ export class AuthController {
         password: hashedPassword,
       });
     } catch (err) {
-      throw new InternalServerErrorException(err.message);
+      throw new InternalServerErrorException(err);
     }
   }
 

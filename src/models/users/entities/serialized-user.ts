@@ -9,16 +9,11 @@ export class SerializedUser {
   firstName: string;
   lastName: string;
   role: string;
-  createdAtDate: Date;
-  createdAtTime: string;
-  updatedAtDate: Date;
-  updatedAtTime: string;
+  createdAt: string;
+  updatedAt: string;
 
   @Exclude()
-  deletedAtDate: Date;
-
-  @Exclude()
-  deletedAtTime: string;
+  deletedAt: string;
 
   @Exclude()
   password: string;

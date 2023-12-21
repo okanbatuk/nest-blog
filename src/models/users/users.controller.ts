@@ -32,10 +32,13 @@ export class UsersController {
 
   @Get()
   @RolesDecorator([Roles.ADMIN])
-  async getAllUser(): Promise<User[]> {
+  async getAllUser(): Promise<SerializedUser[]> {
     const users = await this.usersService.getAll();
     if (!users.length) throw new NotFoundException('There is no user');
-    return users;
+
+    // Convert the date format to UTC
+    const serializedUsers = users.map(this.#serializeUser);
+    return serializedUsers;
   }
   @Get('profile')
   async getUserProfile(
@@ -43,6 +46,8 @@ export class UsersController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<SerializedUser> {
     const user = await this.usersService.getById(req.user.sub);
+
+    // If user null, destroy the session and return error
     if (!user) {
       res.clearCookie('jwt', {
         httpOnly: true,
@@ -52,7 +57,9 @@ export class UsersController {
       this.#redis.del(req.user.sub);
       throw new InternalServerErrorException('Something went wrong');
     }
-    const serializedUser = new SerializedUser(user);
+
+    // Convert the date format to UTC
+    const serializedUser = this.#serializeUser(user);
     return serializedUser;
   }
 
@@ -62,7 +69,9 @@ export class UsersController {
   ): Promise<SerializedUser> {
     const user = await this.usersService.getById(uuid);
     if (!user) throw new NotFoundException('User not found');
-    const serializedUser = new SerializedUser(user);
+
+    // Convert the date format to UTC
+    const serializedUser = this.#serializeUser(user);
     return serializedUser;
   }
 
@@ -79,8 +88,20 @@ export class UsersController {
     });
     await this.#redis.del(req.user.sub);
 
+    // If logged in user's uuid is different, return error
     if (req.user.sub !== uuid) throw new ForbiddenException();
 
+    // Delete the user
     await this.usersService.delete(req.user.sub);
   }
+
+  // Convert the date format to UTC
+  #serializeUser = (user: User) => {
+    return new SerializedUser({
+      ...user,
+      createdAt: user.createdAt.toUTCString(),
+      updatedAt: user.updatedAt.toUTCString(),
+      deletedAt: user.deletedAt ? user.deletedAt.toUTCString() : undefined,
+    });
+  };
 }

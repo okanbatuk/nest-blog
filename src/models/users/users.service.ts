@@ -29,6 +29,7 @@ export class UsersService implements Service<User> {
     await this.userRepository.update(
       { uuid },
       {
+        updatedAt: new Date(),
         deletedAt: new Date(),
         isActive: false,
       },

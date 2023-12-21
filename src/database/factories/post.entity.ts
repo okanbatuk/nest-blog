@@ -1,9 +1,11 @@
 import {
   BaseEntity,
   Column,
+  CreateDateColumn,
   Entity,
   Generated,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
@@ -24,29 +26,24 @@ export default class Post extends BaseEntity {
   @Column({ nullable: false, default: false })
   isDeleted: boolean;
 
-  @Column({ nullable: false, type: 'date', default: new Date() })
-  createdAtDate: Date;
+  @CreateDateColumn({
+    name: 'createdAt',
+    type: 'timestamp with time zone',
+    default: new Date(),
+  })
+  createdAt: Date;
+
+  @UpdateDateColumn({
+    name: 'updatedAt',
+    type: 'timestamp with time zone',
+    default: new Date(),
+  })
+  updatedAt: Date;
 
   @Column({
-    nullable: false,
-    type: 'time',
-    default: new Date().toLocaleTimeString(),
+    name: 'deletedAt',
+    type: 'timestamp with time zone',
+    nullable: true,
   })
-  createdAtTime: string;
-
-  @Column({ nullable: false, type: 'date', default: new Date() })
-  updatedAtDate: Date;
-
-  @Column({
-    nullable: false,
-    type: 'time',
-    default: new Date().toLocaleTimeString(),
-  })
-  updatedAtTime: string;
-
-  @Column({ type: 'date', nullable: true })
-  deletedAtDate: Date;
-
-  @Column({ type: 'time', nullable: true })
-  deletedAtTime: string;
+  deletedAt: Date;
 }

@@ -21,6 +21,7 @@ import User from '../../database/factories/user.entity';
 import { SerializedUser } from './entities/serialized-user';
 import { Roles, RolesDecorator } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards';
+import convertDateUtil from '../../common/utils/convert-date.util';
 
 @Controller('users')
 @UseGuards(RolesGuard)
@@ -36,8 +37,10 @@ export class UsersController {
     const users = await this.usersService.getAll();
     if (!users.length) throw new NotFoundException('There is no user');
 
-    // Convert the date format to UTC
-    const serializedUsers = users.map(this.#serializeUser);
+    // Serialize the user with converted dates
+    const serializedUsers = users.map(
+      (user) => new SerializedUser(convertDateUtil<User>(user)),
+    );
     return serializedUsers;
   }
   @Get('profile')
@@ -58,8 +61,8 @@ export class UsersController {
       throw new InternalServerErrorException('Something went wrong');
     }
 
-    // Convert the date format to UTC
-    const serializedUser = this.#serializeUser(user);
+    // Serialize the user with converted dates
+    const serializedUser = new SerializedUser(convertDateUtil<User>(user));
     return serializedUser;
   }
 
@@ -70,8 +73,8 @@ export class UsersController {
     const user = await this.usersService.getById(uuid);
     if (!user) throw new NotFoundException('User not found');
 
-    // Convert the date format to UTC
-    const serializedUser = this.#serializeUser(user);
+    // Serialize the user with converted dates
+    const serializedUser = new SerializedUser(convertDateUtil<User>(user));
     return serializedUser;
   }
 
@@ -94,14 +97,4 @@ export class UsersController {
     // Delete the user
     await this.usersService.delete(req.user.sub);
   }
-
-  // Convert the date format to UTC
-  #serializeUser = (user: User) => {
-    return new SerializedUser({
-      ...user,
-      createdAt: user.createdAt.toUTCString(),
-      updatedAt: user.updatedAt.toUTCString(),
-      deletedAt: user.deletedAt ? user.deletedAt.toUTCString() : undefined,
-    });
-  };
 }

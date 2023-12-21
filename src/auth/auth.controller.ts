@@ -53,6 +53,13 @@ export class AuthController {
     );
     if (!user) throw new NotFoundException('User Not Found');
 
+    // Update inactive user for Login
+    const affected =
+      !user.isActive && (await this.authService.activateUser(user.uuid));
+
+    // If user is inactive and not updated, returns error
+    if (!user.isActive && !affected) throw new InternalServerErrorException();
+
     // Compare the password
     const check = await compare(userPayload.password, user.password);
     if (!check) throw new ForbiddenException('Invalid password');

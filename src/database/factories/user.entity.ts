@@ -4,9 +4,11 @@ import {
   CreateDateColumn,
   Entity,
   Generated,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import Post from './post.entity';
 
 @Entity()
 export default class User extends BaseEntity {
@@ -31,6 +33,9 @@ export default class User extends BaseEntity {
 
   @Column({ nullable: false, default: 'USER' })
   role: string;
+
+  @OneToMany(() => Post, (post) => post.user)
+  posts: Post[];
 
   @Column({ nullable: false, default: true })
   isActive: boolean;

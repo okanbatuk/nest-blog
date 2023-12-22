@@ -4,9 +4,11 @@ import {
   CreateDateColumn,
   Entity,
   Generated,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import User from './user.entity';
 
 @Entity()
 export default class Post extends BaseEntity {
@@ -17,11 +19,15 @@ export default class Post extends BaseEntity {
   @Generated('uuid')
   uuid: string;
 
-  @Column({ nullable: false, length: 50 })
+  @Column({ nullable: false, length: 100 })
   title: string;
 
-  @Column({ nullable: false, length: 100 })
+  @Column({ nullable: false, type: 'text' })
   content: string;
+
+  @Column({ name: 'userId', nullable: false })
+  @ManyToOne(() => User, (user) => user.posts)
+  user: User;
 
   @Column({ nullable: false, default: false })
   isDeleted: boolean;

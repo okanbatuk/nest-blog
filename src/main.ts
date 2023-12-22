@@ -15,7 +15,12 @@ import { HttpStatus, ValidationPipe } from '@nestjs/common';
   app.use(cookieParser());
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
-    new ValidationPipe({ errorHttpStatusCode: HttpStatus.NOT_ACCEPTABLE }),
+    new ValidationPipe({
+      errorHttpStatusCode: HttpStatus.NOT_ACCEPTABLE,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
+    }),
   );
   await app.listen(PORT);
 })();

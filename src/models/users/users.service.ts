@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
+// Entities and Dtos
 import User from '../../database/factories/user.entity';
+
+// Commons
 import { Service } from '../../common/types/service';
 
 @Injectable()
@@ -25,8 +29,8 @@ export class UsersService implements Service<User> {
   };
 
   // Set isActive field to false
-  delete = async (uuid: string): Promise<void> => {
-    await this.userRepository.update(
+  delete = async (uuid: string): Promise<number | undefined> => {
+    const { affected } = await this.userRepository.update(
       { uuid },
       {
         updatedAt: new Date(),
@@ -34,5 +38,6 @@ export class UsersService implements Service<User> {
         isActive: false,
       },
     );
+    return affected;
   };
 }

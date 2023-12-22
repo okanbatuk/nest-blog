@@ -16,9 +16,15 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { Redis } from 'ioredis';
+
+// Services
 import { UsersService } from './users.service';
+
+// Entities and Dtos
 import User from '../../database/factories/user.entity';
 import { SerializedUser } from './entities/serialized-user';
+
+// Commons
 import { Roles, RolesDecorator } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards';
 import convertDateUtil from '../../common/utils/convert-date.util';
@@ -83,7 +89,7 @@ export class UsersController {
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Req() req,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): Promise<{ message: string }> {
     res.clearCookie('jwt', {
       httpOnly: true,
       // secure:true,
@@ -95,6 +101,8 @@ export class UsersController {
     if (req.user.sub !== uuid) throw new ForbiddenException();
 
     // Delete the user
-    await this.usersService.delete(req.user.sub);
+    const affected = await this.usersService.delete(req.user.sub);
+    if (!affected) throw new InternalServerErrorException();
+    return { message: 'Resource deleted successfully' };
   }
 }

@@ -19,13 +19,19 @@ import {
   UnauthorizedException,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { hash, compare } from 'bcrypt';
 import { Redis } from 'ioredis';
-import { AuthService } from './auth.service';
-import { LoginUserDto, RegisterUserDto } from './dtos';
 import { Request, Response } from 'express';
-import { ConfigService } from '@nestjs/config';
+
+// Services
+import { AuthService } from './auth.service';
+
+// Entities and Dtos
+import { LoginUserDto, RegisterUserDto } from './dtos';
+
+// Commons
 import { Public } from '../common/decorators/public.decorator';
 
 @Controller('/')
